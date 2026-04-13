@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="Sdl3VkTriangle/Sdl3VkTriangle.vcxproj" Id="e4e8e539-843b-4fc2-b425-ced74c5fb4ed" />
+</Solution>

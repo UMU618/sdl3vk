@@ -1,0 +1,7 @@
+vcpkg_installed/
+
+# VS
+.vs/
+bin/
+*.aps
+*.vcxproj.user

@@ -1,0 +1,14 @@
+{
+  "dependencies": [
+    "glm",
+    "ms-gsl",
+    {
+      "name": "sdl3",
+      "features": [
+        "vulkan"
+      ]
+    },
+    "volk",
+    "vulkan"
+  ]
+}
