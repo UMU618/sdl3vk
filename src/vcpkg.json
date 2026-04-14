@@ -9,6 +9,6 @@
       ]
     },
     "volk",
-    "vulkan"
+    "vulkan-headers"
   ]
 }
