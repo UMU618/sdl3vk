@@ -17,7 +17,7 @@
 #else
 #endif
 #define VK_NO_PROTOTYPES
-#include "volk.h"
+#include <volk.h>
 
 #include <glm/glm.hpp>
 
@@ -48,7 +48,8 @@ struct Vertex {
   }
 };
 
-constexpr std::array<Vertex, 3> kVertices = {
+// UMU: This is just a placeholder. What really works is the Vertex Shader.
+constexpr std::array<Vertex, 3> kVertices{
     Vertex{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
     Vertex{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
     Vertex{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
@@ -80,7 +81,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
 
   // Create window
   SDL_Window* window =
-      SDL_CreateWindow("SDL3 Vulkan Triangle", 800, 600,
+      SDL_CreateWindow("SDL3 Vulkan Triangle", 800, 618,
                        SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
   if (!window) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Window creation failed: %s",
@@ -113,25 +114,27 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 extensions[i]);
   }
 
-  VkApplicationInfo app_info{};
-  app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  app_info.pApplicationName = "Vulkan Triangle";
-  app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  app_info.pEngineName = "No Engine";
-  app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  app_info.apiVersion = VK_API_VERSION_1_0;
-
-  VkInstanceCreateInfo create_info{};
-  create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-  create_info.pApplicationInfo = &app_info;
-  create_info.enabledExtensionCount = extension_count;
-  create_info.ppEnabledExtensionNames = extensions;
-
   VkInstance instance;
-  if (vkCreateInstance(&create_info, nullptr, &instance) != VK_SUCCESS) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to create Vulkan instance");
-    return EXIT_FAILURE;
+  {
+    VkApplicationInfo app_info{};
+    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    app_info.pApplicationName = "Vulkan Triangle";
+    app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    app_info.pEngineName = "No Engine";
+    app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    app_info.apiVersion = VK_API_VERSION_1_0;
+
+    VkInstanceCreateInfo create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    create_info.pApplicationInfo = &app_info;
+    create_info.enabledExtensionCount = extension_count;
+    create_info.ppEnabledExtensionNames = extensions;
+
+    if (vkCreateInstance(&create_info, nullptr, &instance) != VK_SUCCESS) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to create Vulkan instance");
+      return EXIT_FAILURE;
+    }
   }
   gsl::final_action instance_cleanup{
       [instance]() { vkDestroyInstance(instance, nullptr); }};
@@ -153,113 +156,118 @@ int main(int /*argc*/, char* /*argv*/[]) {
               "Successfully created Vulkan surface");
 
   // 3. Pick physical device
-  std::uint32_t device_count{};
-  if (VkResult result =
-          vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
-      VK_SUCCESS != result) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to enumerate physical devices: #%d", result);
-    return EXIT_FAILURE;
-  }
-  if (device_count == 0) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "No Vulkan-capable devices found");
-    return EXIT_FAILURE;
-  }
-  std::vector<VkPhysicalDevice> devices(device_count);
-  if (VkResult result =
-          vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
-      VK_SUCCESS != result) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to get %u physical devices: #%d", device_count,
-                 result);
-    return EXIT_FAILURE;
-  }
-
   VkPhysicalDevice physical_device{VK_NULL_HANDLE};
   auto graphics_family{std::numeric_limits<std::uint32_t>::max()};
   auto present_family{std::numeric_limits<std::uint32_t>::max()};
-  for (const auto& device : devices) {
-    std::uint32_t queue_family_count{};
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
-                                             nullptr);
-    std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
-                                             queue_families.data());
+  {
+    std::uint32_t device_count{};
+    if (VkResult result =
+            vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+        VK_SUCCESS != result) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to enumerate physical devices: #%d", result);
+      return EXIT_FAILURE;
+    }
+    if (device_count == 0) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "No Vulkan-capable devices found");
+      return EXIT_FAILURE;
+    }
+    std::vector<VkPhysicalDevice> devices(device_count);
+    if (VkResult result =
+            vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
+        VK_SUCCESS != result) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to get %u physical devices: #%d", device_count,
+                   result);
+      return EXIT_FAILURE;
+    }
 
-    bool has_graphics{};
-    bool has_present{};
-    for (std::uint32_t i = 0; i < queue_family_count; ++i) {
-      if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-        graphics_family = i;
-        has_graphics = true;
+    for (const auto& device : devices) {
+      std::uint32_t queue_family_count{};
+      vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
+                                               nullptr);
+      std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+      vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
+                                               queue_families.data());
+
+      bool has_graphics{};
+      bool has_present{};
+      for (std::uint32_t i = 0; i < queue_family_count; ++i) {
+        if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+          graphics_family = i;
+          has_graphics = true;
+        }
+        VkBool32 present_support{};
+        if (VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(
+                device, i, surface, &present_support);
+            VK_SUCCESS != result) {
+          SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                       "Failed to get physical device surface support: %d",
+                       result);
+          continue;
+        }
+        if (present_support) {
+          present_family = i;
+          has_present = true;
+        }
       }
-      VkBool32 present_support{};
-      if (VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(
-              device, i, surface, &present_support);
-          VK_SUCCESS != result) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                     "Failed to get physical device surface support: %d",
-                     result);
-        continue;
-      }
-      if (present_support) {
-        present_family = i;
-        has_present = true;
+      if (has_graphics && has_present) {
+        physical_device = device;
+        break;
       }
     }
-    if (has_graphics && has_present) {
-      physical_device = device;
-      break;
+    if (VK_NULL_HANDLE == physical_device) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "No suitable Vulkan device found");
+      return EXIT_FAILURE;
     }
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Selected physical device");
   }
-  if (VK_NULL_HANDLE == physical_device) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "No suitable Vulkan device found");
-    return EXIT_FAILURE;
-  }
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Selected physical device");
 
   // 4. Create logical device
-  float queue_priority = 1.0f;
-  std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
-  VkDeviceQueueCreateInfo graphics_queue_create_info{};
-  graphics_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  graphics_queue_create_info.queueFamilyIndex = graphics_family;
-  graphics_queue_create_info.queueCount = 1;
-  graphics_queue_create_info.pQueuePriorities = &queue_priority;
-  queue_create_infos.push_back(graphics_queue_create_info);
-
-  if (graphics_family != present_family) {
-    VkDeviceQueueCreateInfo present_queue_create_info{};
-    present_queue_create_info.sType =
-        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    present_queue_create_info.queueFamilyIndex = present_family;
-    present_queue_create_info.queueCount = 1;
-    present_queue_create_info.pQueuePriorities = &queue_priority;
-    queue_create_infos.push_back(present_queue_create_info);
-  }
-
-  VkPhysicalDeviceFeatures device_features{};
-  VkDeviceCreateInfo device_create_info{};
-  device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-  device_create_info.queueCreateInfoCount =
-      gsl::narrow_cast<uint32_t>(queue_create_infos.size());
-  device_create_info.pQueueCreateInfos = queue_create_infos.data();
-  device_create_info.pEnabledFeatures = &device_features;
-  constexpr std::array<const char*, 1> device_extensions{
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-  device_create_info.enabledExtensionCount =
-      gsl::narrow_cast<uint32_t>(device_extensions.size());
-  device_create_info.ppEnabledExtensionNames = device_extensions.data();
-
   VkDevice device;
-  if (VkResult result = vkCreateDevice(physical_device, &device_create_info,
-                                       nullptr, &device);
-      VK_SUCCESS != result) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to create logical device: #%d", result);
-    return EXIT_FAILURE;
+  {
+    float queue_priority = 1.0f;
+    std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
+    VkDeviceQueueCreateInfo graphics_queue_create_info{};
+    graphics_queue_create_info.sType =
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    graphics_queue_create_info.queueFamilyIndex = graphics_family;
+    graphics_queue_create_info.queueCount = 1;
+    graphics_queue_create_info.pQueuePriorities = &queue_priority;
+    queue_create_infos.push_back(graphics_queue_create_info);
+
+    if (graphics_family != present_family) {
+      VkDeviceQueueCreateInfo present_queue_create_info{};
+      present_queue_create_info.sType =
+          VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+      present_queue_create_info.queueFamilyIndex = present_family;
+      present_queue_create_info.queueCount = 1;
+      present_queue_create_info.pQueuePriorities = &queue_priority;
+      queue_create_infos.push_back(present_queue_create_info);
+    }
+
+    VkPhysicalDeviceFeatures device_features{};
+    VkDeviceCreateInfo device_create_info{};
+    device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    device_create_info.queueCreateInfoCount =
+        gsl::narrow_cast<uint32_t>(queue_create_infos.size());
+    device_create_info.pQueueCreateInfos = queue_create_infos.data();
+    device_create_info.pEnabledFeatures = &device_features;
+    constexpr std::array<const char*, 1> device_extensions{
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    device_create_info.enabledExtensionCount =
+        gsl::narrow_cast<uint32_t>(device_extensions.size());
+    device_create_info.ppEnabledExtensionNames = device_extensions.data();
+
+    if (VkResult result = vkCreateDevice(physical_device, &device_create_info,
+                                         nullptr, &device);
+        VK_SUCCESS != result) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to create logical device: #%d", result);
+      return EXIT_FAILURE;
+    }
   }
   gsl::final_action device_cleanup{
       [device]() { vkDestroyDevice(device, nullptr); }};
@@ -273,73 +281,79 @@ int main(int /*argc*/, char* /*argv*/[]) {
   vkGetDeviceQueue(device, present_family, 0, &present_queue);
 
   // 5. Create swapchain
-  VkSurfaceCapabilitiesKHR capabilities;
-  if (VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-          physical_device, surface, &capabilities);
-      VK_SUCCESS != result) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to get physical device surface capabilities: %d",
-                 result);
-    return EXIT_FAILURE;
-  }
-
-  std::uint32_t format_count;
-  if (VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(
-          physical_device, surface, &format_count, nullptr);
-      VK_SUCCESS != result) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to get physical device surface formats: #%d", result);
-    return EXIT_FAILURE;
-  }
-  std::vector<VkSurfaceFormatKHR> formats(format_count);
-  if (VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(
-          physical_device, surface, &format_count, formats.data());
-      VK_SUCCESS != result) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to get %u physical device surface formats: #%d",
-                 format_count, result);
-    return EXIT_FAILURE;
-  }
-
-  VkSurfaceFormatKHR surface_format = formats[0];
-  for (const auto& format : formats) {
-    if (format.format == VK_FORMAT_B8G8R8A8_SRGB &&
-        format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-      surface_format = format;
-      break;
+  VkSurfaceFormatKHR surface_format{};
+  VkExtent2D swapchain_extent{};
+  VkSwapchainKHR swapchain{};
+  {
+    VkSurfaceCapabilitiesKHR capabilities;
+    if (VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+            physical_device, surface, &capabilities);
+        VK_SUCCESS != result) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to get physical device surface capabilities: %d",
+                   result);
+      return EXIT_FAILURE;
     }
-  }
 
-  VkExtent2D swapchain_extent = capabilities.currentExtent;
-  if (UINT32_MAX == swapchain_extent.width) {
-    int width, height;
-    SDL_GetWindowSizeInPixels(window, &width, &height);
-    swapchain_extent.width = static_cast<uint32_t>(width);
-    swapchain_extent.height = static_cast<uint32_t>(height);
-  }
+    std::uint32_t format_count;
+    if (VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(
+            physical_device, surface, &format_count, nullptr);
+        VK_SUCCESS != result) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to get physical device surface formats: #%d",
+                   result);
+      return EXIT_FAILURE;
+    }
+    std::vector<VkSurfaceFormatKHR> formats(format_count);
+    if (VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(
+            physical_device, surface, &format_count, formats.data());
+        VK_SUCCESS != result) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to get %u physical device surface formats: #%d",
+                   format_count, result);
+      return EXIT_FAILURE;
+    }
 
-  VkSwapchainCreateInfoKHR swapchain_info{};
-  swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-  swapchain_info.surface = surface;
-  swapchain_info.minImageCount = 2;
-  swapchain_info.imageFormat = surface_format.format;
-  swapchain_info.imageColorSpace = surface_format.colorSpace;
-  swapchain_info.imageExtent = swapchain_extent;
-  swapchain_info.imageArrayLayers = 1;
-  swapchain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-  swapchain_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  swapchain_info.preTransform = capabilities.currentTransform;
-  swapchain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-  swapchain_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-  swapchain_info.clipped = VK_TRUE;
+    surface_format = formats[0];
+    for (const auto& format : formats) {
+      if ((format.format == VK_FORMAT_B8G8R8A8_UNORM ||
+           format.format == VK_FORMAT_R8G8B8A8_UNORM) &&
+          format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+        surface_format = format;
+        break;
+      }
+    }
 
-  VkSwapchainKHR swapchain;
-  if (VkResult result =
-          vkCreateSwapchainKHR(device, &swapchain_info, nullptr, &swapchain);
-      VK_SUCCESS != result) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create swapchain: %d",
-                 result);
-    return EXIT_FAILURE;
+    swapchain_extent = capabilities.currentExtent;
+    if (UINT32_MAX == swapchain_extent.width) {
+      int width, height;
+      SDL_GetWindowSizeInPixels(window, &width, &height);
+      swapchain_extent.width = static_cast<uint32_t>(width);
+      swapchain_extent.height = static_cast<uint32_t>(height);
+    }
+
+    VkSwapchainCreateInfoKHR swapchain_info{};
+    swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapchain_info.surface = surface;
+    swapchain_info.minImageCount = 2;
+    swapchain_info.imageFormat = surface_format.format;
+    swapchain_info.imageColorSpace = surface_format.colorSpace;
+    swapchain_info.imageExtent = swapchain_extent;
+    swapchain_info.imageArrayLayers = 1;
+    swapchain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    swapchain_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    swapchain_info.preTransform = capabilities.currentTransform;
+    swapchain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    swapchain_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    swapchain_info.clipped = VK_TRUE;
+
+    if (VkResult result =
+            vkCreateSwapchainKHR(device, &swapchain_info, nullptr, &swapchain);
+        VK_SUCCESS != result) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to create swapchain: %d", result);
+      return EXIT_FAILURE;
+    }
   }
   // swapchain will be recreated on window resize, so we use reference capture
   // here to ensure the cleanup lambda always has the latest swapchain handle
@@ -402,39 +416,41 @@ int main(int /*argc*/, char* /*argv*/[]) {
               "Successfully created %u image views", image_count);
 
   // 7. Create render pass
-  VkAttachmentDescription color_attachment{};
-  color_attachment.format = surface_format.format;
-  color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  VkRenderPass render_pass{};
+  {
+    VkAttachmentDescription color_attachment{};
+    color_attachment.format = surface_format.format;
+    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-  VkAttachmentReference color_attachment_ref{};
-  color_attachment_ref.attachment = 0;
-  color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkAttachmentReference color_attachment_ref{};
+    color_attachment_ref.attachment = 0;
+    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-  VkSubpassDescription subpass{};
-  subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass.colorAttachmentCount = 1;
-  subpass.pColorAttachments = &color_attachment_ref;
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &color_attachment_ref;
 
-  VkRenderPassCreateInfo render_pass_info{};
-  render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  render_pass_info.attachmentCount = 1;
-  render_pass_info.pAttachments = &color_attachment;
-  render_pass_info.subpassCount = 1;
-  render_pass_info.pSubpasses = &subpass;
+    VkRenderPassCreateInfo render_pass_info{};
+    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    render_pass_info.attachmentCount = 1;
+    render_pass_info.pAttachments = &color_attachment;
+    render_pass_info.subpassCount = 1;
+    render_pass_info.pSubpasses = &subpass;
 
-  VkRenderPass render_pass;
-  if (VkResult result =
-          vkCreateRenderPass(device, &render_pass_info, nullptr, &render_pass);
-      VK_SUCCESS != result) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to create render pass: #%d", result);
-    return EXIT_FAILURE;
+    if (VkResult result = vkCreateRenderPass(device, &render_pass_info, nullptr,
+                                             &render_pass);
+        VK_SUCCESS != result) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to create render pass: #%d", result);
+      return EXIT_FAILURE;
+    }
   }
   gsl::final_action render_pass_cleanup{[device, render_pass]() {
     vkDestroyRenderPass(device, render_pass, nullptr);
@@ -442,182 +458,196 @@ int main(int /*argc*/, char* /*argv*/[]) {
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Successfully created render pass");
 
   // 8. Load and create shader modules
-  auto vert_shader_code = ReadFile("assets/triangle_vert.spv");
-  if (vert_shader_code.empty()) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to load vertex shader file");
-    return EXIT_FAILURE;
-  }
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-              "Successfully loaded vertex shader (%zu bytes)",
-              vert_shader_code.size());
+  VkShaderModule vert_shader_module{};
+  {
+    auto vert_shader_code = ReadFile("assets/triangle_vert.spv");
+    if (vert_shader_code.empty()) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to load vertex shader file");
+      return EXIT_FAILURE;
+    }
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                "Successfully loaded vertex shader (%zu bytes)",
+                vert_shader_code.size());
 
-  auto frag_shader_code = ReadFile("assets/triangle_frag.spv");
-  if (frag_shader_code.empty()) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to load fragment shader file");
-    return EXIT_FAILURE;
-  }
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-              "Successfully loaded fragment shader (%zu bytes)",
-              frag_shader_code.size());
+    VkShaderModuleCreateInfo vert_module_info{};
+    vert_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    vert_module_info.codeSize = vert_shader_code.size();
+    vert_module_info.pCode =
+        reinterpret_cast<const std::uint32_t*>(vert_shader_code.data());
 
-  VkShaderModuleCreateInfo vert_module_info{};
-  vert_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  vert_module_info.codeSize = vert_shader_code.size();
-  vert_module_info.pCode =
-      reinterpret_cast<const std::uint32_t*>(vert_shader_code.data());
-  VkShaderModule vert_shader_module;
-  if (VkResult result = vkCreateShaderModule(device, &vert_module_info, nullptr,
-                                             &vert_shader_module);
-      VK_SUCCESS != result) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to create vertex shader module: #%d", result);
-    return EXIT_FAILURE;
+    if (VkResult result = vkCreateShaderModule(device, &vert_module_info,
+                                               nullptr, &vert_shader_module);
+        VK_SUCCESS != result) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to create vertex shader module: #%d", result);
+      return EXIT_FAILURE;
+    }
   }
   gsl::final_action vert_shader_cleanup{[device, vert_shader_module]() {
     vkDestroyShaderModule(device, vert_shader_module, nullptr);
   }};
 
-  VkShaderModuleCreateInfo frag_module_info{};
-  frag_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  frag_module_info.codeSize = frag_shader_code.size();
-  frag_module_info.pCode =
-      reinterpret_cast<const std::uint32_t*>(frag_shader_code.data());
-  VkShaderModule frag_shader_module;
-  if (VkResult result = vkCreateShaderModule(device, &frag_module_info, nullptr,
-                                             &frag_shader_module);
-      VK_SUCCESS != result) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to create fragment shader module: #%d", result);
-    return EXIT_FAILURE;
+  VkShaderModule frag_shader_module{};
+  {
+    auto frag_shader_code = ReadFile("assets/triangle_frag.spv");
+    if (frag_shader_code.empty()) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to load fragment shader file");
+      return EXIT_FAILURE;
+    }
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                "Successfully loaded fragment shader (%zu bytes)",
+                frag_shader_code.size());
+
+    VkShaderModuleCreateInfo frag_module_info{};
+    frag_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    frag_module_info.codeSize = frag_shader_code.size();
+    frag_module_info.pCode =
+        reinterpret_cast<const std::uint32_t*>(frag_shader_code.data());
+
+    if (VkResult result = vkCreateShaderModule(device, &frag_module_info,
+                                               nullptr, &frag_shader_module);
+        VK_SUCCESS != result) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to create fragment shader module: #%d", result);
+      return EXIT_FAILURE;
+    }
   }
   gsl::final_action frag_shader_cleanup{[device, frag_shader_module]() {
     vkDestroyShaderModule(device, frag_shader_module, nullptr);
   }};
 
   // 9. Create graphics pipeline
-  VkPipelineShaderStageCreateInfo vert_stage_info{};
-  vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  vert_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-  vert_stage_info.module = vert_shader_module;
-  vert_stage_info.pName = "main";
-
-  VkPipelineShaderStageCreateInfo frag_stage_info{};
-  frag_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  frag_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  frag_stage_info.module = frag_shader_module;
-  frag_stage_info.pName = "main";
-
-  VkPipelineShaderStageCreateInfo shader_stages[] = {vert_stage_info,
-                                                     frag_stage_info};
-
-  auto binding_description = Vertex::GetBindingDescription();
-  auto attribute_descriptions = Vertex::GetAttributeDescriptions();
-
-  VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-  vertexInputInfo.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  vertexInputInfo.vertexBindingDescriptionCount = 1;
-  vertexInputInfo.pVertexBindingDescriptions = &binding_description;
-  vertexInputInfo.vertexAttributeDescriptionCount =
-      static_cast<uint32_t>(attribute_descriptions.size());
-  vertexInputInfo.pVertexAttributeDescriptions = attribute_descriptions.data();
-
-  VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-  inputAssembly.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-  inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-  VkViewport viewport{};
-  viewport.x = 0.0f;
-  viewport.y = 0.0f;
-  viewport.width = static_cast<float>(swapchain_extent.width);
-  viewport.height = static_cast<float>(swapchain_extent.height);
-  viewport.minDepth = 0.0f;
-  viewport.maxDepth = 1.0f;
-
-  VkRect2D scissor{};
-  scissor.offset = {0, 0};
-  scissor.extent = swapchain_extent;
-
-  VkPipelineViewportStateCreateInfo viewportState{};
-  viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-  viewportState.viewportCount = 1;
-  viewportState.pViewports = &viewport;
-  viewportState.scissorCount = 1;
-  viewportState.pScissors = &scissor;
-
-  VkPipelineRasterizationStateCreateInfo rasterizer{};
-  rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-  rasterizer.depthClampEnable = VK_FALSE;
-  rasterizer.rasterizerDiscardEnable = VK_FALSE;
-  rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-  rasterizer.lineWidth = 1.0f;
-  rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-
-  VkPipelineMultisampleStateCreateInfo multisampling{};
-  multisampling.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-  multisampling.sampleShadingEnable = VK_FALSE;
-  multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-  VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-  colorBlendAttachment.colorWriteMask =
-      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-  colorBlendAttachment.blendEnable = VK_FALSE;
-
-  VkPipelineColorBlendStateCreateInfo colorBlending{};
-  colorBlending.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-  colorBlending.logicOpEnable = VK_FALSE;
-  colorBlending.attachmentCount = 1;
-  colorBlending.pAttachments = &colorBlendAttachment;
-
-  VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-  pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-
-  VkPipelineLayout pipelineLayout;
-  if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
-                             &pipelineLayout) != VK_SUCCESS) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to create pipeline layout");
-    return EXIT_FAILURE;
-  }
-  gsl::final_action pipeline_layout_cleanup{[device, pipelineLayout]() {
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-  }};
-
-  VkGraphicsPipelineCreateInfo pipelineInfo{};
-  pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-  pipelineInfo.stageCount = 2;
-  pipelineInfo.pStages = shader_stages;
-  pipelineInfo.pVertexInputState = &vertexInputInfo;
-  pipelineInfo.pInputAssemblyState = &inputAssembly;
-  pipelineInfo.pViewportState = &viewportState;
-  pipelineInfo.pRasterizationState = &rasterizer;
-  pipelineInfo.pMultisampleState = &multisampling;
-  pipelineInfo.pColorBlendState = &colorBlending;
-  pipelineInfo.layout = pipelineLayout;
-  pipelineInfo.renderPass = render_pass;
-  pipelineInfo.subpass = 0;
-
-  VkPipeline graphicsPipeline;
-  if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
-                                nullptr, &graphicsPipeline) != VK_SUCCESS) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to create graphics pipeline");
-    return EXIT_FAILURE;
-  }
-  gsl::final_action graphics_pipeline_cleanup{[device, graphicsPipeline]() {
-    vkDestroyPipeline(device, graphicsPipeline, nullptr);
-  }};
+  VkPipeline graphics_pipeline{};
   {
-    gsl::final_action early_cleanup{std::move(frag_shader_cleanup)};
+    // vkCreatePipelineLayout
+    VkPipelineShaderStageCreateInfo vert_stage_info{};
+    vert_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vert_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vert_stage_info.module = vert_shader_module;
+    vert_stage_info.pName = "main";
+
+    VkPipelineShaderStageCreateInfo frag_stage_info{};
+    frag_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    frag_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    frag_stage_info.module = frag_shader_module;
+    frag_stage_info.pName = "main";
+
+    VkPipelineShaderStageCreateInfo shader_stages[] = {vert_stage_info,
+                                                       frag_stage_info};
+
+    auto binding_description = Vertex::GetBindingDescription();
+    auto attribute_descriptions = Vertex::GetAttributeDescriptions();
+
+    VkPipelineVertexInputStateCreateInfo vertex_input_info{};
+    vertex_input_info.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertex_input_info.vertexBindingDescriptionCount = 1;
+    vertex_input_info.pVertexBindingDescriptions = &binding_description;
+    vertex_input_info.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(attribute_descriptions.size());
+    vertex_input_info.pVertexAttributeDescriptions =
+        attribute_descriptions.data();
+
+    VkPipelineInputAssemblyStateCreateInfo input_assembly{};
+    input_assembly.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    input_assembly.primitiveRestartEnable = VK_FALSE;
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(swapchain_extent.width);
+    viewport.height = static_cast<float>(swapchain_extent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = swapchain_extent;
+
+    VkPipelineViewportStateCreateInfo viewport_state{};
+    viewport_state.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport_state.viewportCount = 1;
+    viewport_state.pViewports = &viewport;
+    viewport_state.scissorCount = 1;
+    viewport_state.pScissors = &scissor;
+
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth = 1.0f;
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+
+    VkPipelineMultisampleStateCreateInfo multisampling{};
+    multisampling.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    VkPipelineColorBlendAttachmentState color_blend_attachment{};
+    color_blend_attachment.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    color_blend_attachment.blendEnable = VK_FALSE;
+
+    VkPipelineColorBlendStateCreateInfo color_blending{};
+    color_blending.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    color_blending.logicOpEnable = VK_FALSE;
+    color_blending.attachmentCount = 1;
+    color_blending.pAttachments = &color_blend_attachment;
+
+    VkPipelineLayoutCreateInfo pipeline_layout_info{};
+    pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    VkPipelineLayout pipeline_layout;
+    if (VkResult result = vkCreatePipelineLayout(device, &pipeline_layout_info,
+                                                 nullptr, &pipeline_layout);
+        result != VK_SUCCESS) {
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Failed to create pipeline layout: #%d", result);
+      return EXIT_FAILURE;
+    }
+
+    gsl::final_action pipeline_layout_cleanup{[device, pipeline_layout]() {
+      vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
+    }};
+
+    // vkCreateGraphicsPipelines
+    {
+      VkGraphicsPipelineCreateInfo pipeline_info{};
+      pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+      pipeline_info.stageCount = 2;
+      pipeline_info.pStages = shader_stages;
+      pipeline_info.pVertexInputState = &vertex_input_info;
+      pipeline_info.pInputAssemblyState = &input_assembly;
+      pipeline_info.pViewportState = &viewport_state;
+      pipeline_info.pRasterizationState = &rasterizer;
+      pipeline_info.pMultisampleState = &multisampling;
+      pipeline_info.pColorBlendState = &color_blending;
+      pipeline_info.layout = pipeline_layout;
+      pipeline_info.renderPass = render_pass;
+      pipeline_info.subpass = 0;
+
+      if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_info,
+                                    nullptr,
+                                    &graphics_pipeline) != VK_SUCCESS) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                     "Failed to create graphics pipeline");
+        return EXIT_FAILURE;
+      }
+    }
   }
+  gsl::final_action graphics_pipeline_cleanup{[device, &graphics_pipeline]() {
+    vkDestroyPipeline(device, graphics_pipeline, nullptr);
+  }};
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
               "Successfully created graphics pipeline");
 
@@ -692,15 +722,15 @@ int main(int /*argc*/, char* /*argv*/[]) {
     vkDestroyBuffer(device, vertex_buffer, nullptr);
   }};
 
-  VkMemoryRequirements memRequirements;
-  vkGetBufferMemoryRequirements(device, vertex_buffer, &memRequirements);
+  VkMemoryRequirements memory_requirements;
+  vkGetBufferMemoryRequirements(device, vertex_buffer, &memory_requirements);
 
   VkPhysicalDeviceMemoryProperties memory_properties;
   vkGetPhysicalDeviceMemoryProperties(physical_device, &memory_properties);
 
   auto memory_type_index{std::numeric_limits<std::uint32_t>::max()};
   for (std::uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
-    if ((memRequirements.memoryTypeBits & (1 << i)) &&
+    if ((memory_requirements.memoryTypeBits & (1 << i)) &&
         (memory_properties.memoryTypes[i].propertyFlags &
          (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))) {
@@ -716,12 +746,13 @@ int main(int /*argc*/, char* /*argv*/[]) {
 
   VkMemoryAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  alloc_info.allocationSize = memRequirements.size;
+  alloc_info.allocationSize = memory_requirements.size;
   alloc_info.memoryTypeIndex = memory_type_index;
-  if (vkAllocateMemory(device, &alloc_info, nullptr, &vertex_buffer_memory) !=
-      VK_SUCCESS) {
+  if (VkResult result =
+          vkAllocateMemory(device, &alloc_info, nullptr, &vertex_buffer_memory);
+      VK_SUCCESS != result) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Failed to allocate vertex buffer memory");
+                 "Failed to allocate vertex buffer memory: #%d", result);
     return EXIT_FAILURE;
   }
   gsl::final_action vertex_buffer_memory_cleanup{
@@ -729,10 +760,22 @@ int main(int /*argc*/, char* /*argv*/[]) {
         vkFreeMemory(device, vertex_buffer_memory, nullptr);
       }};
 
-  vkBindBufferMemory(device, vertex_buffer, vertex_buffer_memory, 0);
-  void* data;
-  vkMapMemory(device, vertex_buffer_memory, 0, buffer_info.size, 0, &data);
-  memcpy(data, kVertices.data(), static_cast<std::size_t>(buffer_info.size));
+  if (VkResult result =
+          vkBindBufferMemory(device, vertex_buffer, vertex_buffer_memory, 0);
+      VK_SUCCESS != result) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "Failed to bind vertex buffer memory: #%d", result);
+  }
+  void* data{};
+  if (VkResult result = vkMapMemory(device, vertex_buffer_memory, 0,
+                                    buffer_info.size, 0, &data);
+      VK_SUCCESS != result) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "Failed to map vertex buffer memory: #%d", result);
+    return EXIT_FAILURE;
+  }
+  std::memcpy(data, kVertices.data(),
+              static_cast<std::size_t>(buffer_info.size));
   vkUnmapMemory(device, vertex_buffer_memory);
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
               "Successfully created vertex buffer");
@@ -787,7 +830,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
     vkCmdBeginRenderPass(command_buffers[i], &rp_begin_info,
                          VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      graphicsPipeline);
+                      graphics_pipeline);
     VkBuffer vertex_buffers[] = {vertex_buffer};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(command_buffers[i], 0, 1, vertex_buffers, offsets);
@@ -864,15 +907,18 @@ int main(int /*argc*/, char* /*argv*/[]) {
       framebuffer_resized = false;
 
       // Recreate swapchain and related resources
-      for (auto& view : swapchain_image_views) {
-        vkDestroyImageView(device, view, nullptr);
-      }
+      vkDestroyPipeline(device, graphics_pipeline, nullptr);
+      // Not use VK_KHR_dynamic_rendering, need to recreate framebuffer
       for (auto& fb : swapchain_framebuffers) {
         vkDestroyFramebuffer(device, fb, nullptr);
+      }
+      for (auto& view : swapchain_image_views) {
+        vkDestroyImageView(device, view, nullptr);
       }
       vkDestroySwapchainKHR(device, swapchain, nullptr);
 
       // 5. Recreate swapchain
+      VkSurfaceCapabilitiesKHR capabilities;
       if (VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
               physical_device, surface, &capabilities);
           VK_SUCCESS != result) {
@@ -889,6 +935,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
         swapchain_extent.height = static_cast<uint32_t>(height);
       }
 
+      VkSwapchainCreateInfoKHR swapchain_info{};
       swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
       swapchain_info.surface = surface;
       swapchain_info.minImageCount = 2;
@@ -902,7 +949,6 @@ int main(int /*argc*/, char* /*argv*/[]) {
       swapchain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
       swapchain_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
       swapchain_info.clipped = VK_TRUE;
-
       if (VkResult result = vkCreateSwapchainKHR(device, &swapchain_info,
                                                  nullptr, &swapchain);
           VK_SUCCESS != result) {
@@ -957,6 +1003,137 @@ int main(int /*argc*/, char* /*argv*/[]) {
         break;
       }
 
+      // 9. Recreate graphics pipeline
+      {
+        // vkCreatePipelineLayout
+        VkPipelineShaderStageCreateInfo vert_stage_info{};
+        vert_stage_info.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        vert_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        vert_stage_info.module = vert_shader_module;
+        vert_stage_info.pName = "main";
+
+        VkPipelineShaderStageCreateInfo frag_stage_info{};
+        frag_stage_info.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        frag_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        frag_stage_info.module = frag_shader_module;
+        frag_stage_info.pName = "main";
+
+        VkPipelineShaderStageCreateInfo shader_stages[] = {vert_stage_info,
+                                                           frag_stage_info};
+
+        auto binding_description = Vertex::GetBindingDescription();
+        auto attribute_descriptions = Vertex::GetAttributeDescriptions();
+
+        VkPipelineVertexInputStateCreateInfo vertex_input_info{};
+        vertex_input_info.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertex_input_info.vertexBindingDescriptionCount = 1;
+        vertex_input_info.pVertexBindingDescriptions = &binding_description;
+        vertex_input_info.vertexAttributeDescriptionCount =
+            static_cast<uint32_t>(attribute_descriptions.size());
+        vertex_input_info.pVertexAttributeDescriptions =
+            attribute_descriptions.data();
+
+        VkPipelineInputAssemblyStateCreateInfo input_assembly{};
+        input_assembly.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        input_assembly.primitiveRestartEnable = VK_FALSE;
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(swapchain_extent.width);
+        viewport.height = static_cast<float>(swapchain_extent.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = swapchain_extent;
+
+        VkPipelineViewportStateCreateInfo viewport_state{};
+        viewport_state.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewport_state.viewportCount = 1;
+        viewport_state.pViewports = &viewport;
+        viewport_state.scissorCount = 1;
+        viewport_state.pScissors = &scissor;
+
+        VkPipelineRasterizationStateCreateInfo rasterizer{};
+        rasterizer.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterizer.depthClampEnable = VK_FALSE;
+        rasterizer.rasterizerDiscardEnable = VK_FALSE;
+        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterizer.lineWidth = 1.0f;
+        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+
+        VkPipelineMultisampleStateCreateInfo multisampling{};
+        multisampling.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisampling.sampleShadingEnable = VK_FALSE;
+        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+        VkPipelineColorBlendAttachmentState color_blend_attachment{};
+        color_blend_attachment.colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        color_blend_attachment.blendEnable = VK_FALSE;
+
+        VkPipelineColorBlendStateCreateInfo color_blending{};
+        color_blending.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        color_blending.logicOpEnable = VK_FALSE;
+        color_blending.attachmentCount = 1;
+        color_blending.pAttachments = &color_blend_attachment;
+
+        VkPipelineLayoutCreateInfo pipeline_layout_info{};
+        pipeline_layout_info.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        VkPipelineLayout pipeline_layout;
+        if (VkResult result = vkCreatePipelineLayout(
+                device, &pipeline_layout_info, nullptr, &pipeline_layout);
+            VK_SUCCESS != result) {
+          SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                       "Failed to create pipeline layout: #%d", result);
+          return EXIT_FAILURE;
+        }
+
+        gsl::final_action pipeline_layout_cleanup{[device, pipeline_layout]() {
+          vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
+        }};
+
+        // vkCreateGraphicsPipelines
+        {
+          VkGraphicsPipelineCreateInfo pipeline_info{};
+          pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+          pipeline_info.stageCount = 2;
+          pipeline_info.pStages = shader_stages;
+          pipeline_info.pVertexInputState = &vertex_input_info;
+          pipeline_info.pInputAssemblyState = &input_assembly;
+          pipeline_info.pViewportState = &viewport_state;
+          pipeline_info.pRasterizationState = &rasterizer;
+          pipeline_info.pMultisampleState = &multisampling;
+          pipeline_info.pColorBlendState = &color_blending;
+          pipeline_info.layout = pipeline_layout;
+          pipeline_info.renderPass = render_pass;
+          pipeline_info.subpass = 0;
+
+          if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1,
+                                        &pipeline_info, nullptr,
+                                        &graphics_pipeline) != VK_SUCCESS) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "Failed to create graphics pipeline");
+            return EXIT_FAILURE;
+          }
+        }
+      }
+
+      // 10. Recreate framebuffers
       swapchain_framebuffers.resize(image_count);
       for (std::size_t i = 0; i < image_count; ++i) {
         VkImageView attachments[] = {swapchain_image_views[i]};
@@ -1027,7 +1204,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
         vkCmdBeginRenderPass(command_buffers[i], &rp_begin_info,
                              VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          graphicsPipeline);
+                          graphics_pipeline);
         VkBuffer vertex_buffers[] = {vertex_buffer};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(command_buffers[i], 0, 1, vertex_buffers,
