@@ -1,5 +1,6 @@
 #define _HAS_EXCEPTIONS 0
 #include <array>
+#include <cstring>
 #include <fstream>
 #include <vector>
 
