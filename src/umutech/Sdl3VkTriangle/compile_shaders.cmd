@@ -8,6 +8,6 @@ if not exist %GLSLC_BIN% (
     exit /b 1
 )
 
-%GLSLC_BIN% src\shaders\triangle.vert -o assets\triangle_vert.spv
-%GLSLC_BIN% src\shaders\triangle.frag -o assets\triangle_frag.spv
+%GLSLC_BIN% shaders\triangle.vert -o ..\assets\triangle_vert.spv
+%GLSLC_BIN% shaders\triangle.frag -o ..\assets\triangle_frag.spv
 pause

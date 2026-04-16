@@ -1,6 +1,9 @@
+// UMU: Using the Vulkan API in C-style manner
+
 #define _HAS_EXCEPTIONS 0
 #include <array>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <vector>
 
@@ -22,6 +25,8 @@
 
 #include <glm/glm.hpp>
 
+namespace fs = std::filesystem;
+
 struct Vertex {
   glm::vec2 pos;
   glm::vec3 color;
@@ -37,12 +42,12 @@ struct Vertex {
   static std::array<VkVertexInputAttributeDescription, 2>
   GetAttributeDescriptions() noexcept {
     std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions{};
-    attribute_descriptions[0].binding = 0;
     attribute_descriptions[0].location = 0;
+    attribute_descriptions[0].binding = 0;
     attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
     attribute_descriptions[0].offset = offsetof(Vertex, pos);
-    attribute_descriptions[1].binding = 0;
     attribute_descriptions[1].location = 1;
+    attribute_descriptions[1].binding = 0;
     attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
     attribute_descriptions[1].offset = offsetof(Vertex, color);
     return attribute_descriptions;
@@ -55,12 +60,12 @@ constexpr std::array<Vertex, 3> kVertices{
     Vertex{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
     Vertex{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
-std::vector<std::byte> ReadFile(std::string_view filename) {
-  std::ifstream file(filename.data(),
-                     std::ios::in | std::ios::ate | std::ios::binary);
+std::vector<std::byte> ReadFile(const fs::path& filename) {
+  std::ifstream file(filename, std::ios::in | std::ios::ate | std::ios::binary);
   if (!file.is_open()) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to open file: %.*s",
-                 gsl::narrow_cast<int>(filename.size()), filename.data());
+                 gsl::narrow_cast<int>(filename.string().size()),
+                 filename.string().c_str());
     return {};
   }
   std::size_t file_size = file.tellg();
@@ -459,9 +464,10 @@ int main(int /*argc*/, char* /*argv*/[]) {
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Successfully created render pass");
 
   // 8. Load and create shader modules
+  const auto assets_dir = fs::current_path().parent_path() / "assets";
   VkShaderModule vert_shader_module{};
   {
-    auto vert_shader_code = ReadFile("assets/triangle_vert.spv");
+    auto vert_shader_code = ReadFile(assets_dir / "triangle_vert.spv");
     if (vert_shader_code.empty()) {
       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                    "Failed to load vertex shader file");
@@ -491,7 +497,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
 
   VkShaderModule frag_shader_module{};
   {
-    auto frag_shader_code = ReadFile("assets/triangle_frag.spv");
+    auto frag_shader_code = ReadFile(assets_dir / "triangle_frag.spv");
     if (frag_shader_code.empty()) {
       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                    "Failed to load fragment shader file");
@@ -890,7 +896,8 @@ int main(int /*argc*/, char* /*argv*/[]) {
               "Successfully created synchronization objects");
 
   // Main loop
-  bool framebuffer_resized = false;
+  bool is_pause{};
+  bool should_recreate{};
   SDL_Event event;
   for (bool should_quit{}; !should_quit;) {
     while (SDL_PollEvent(&event)) {
@@ -899,23 +906,39 @@ int main(int /*argc*/, char* /*argv*/[]) {
       } else if (SDL_EVENT_KEY_DOWN == event.type &&
                  SDLK_ESCAPE == event.key.key) {
         should_quit = true;
+      } else if (SDL_EVENT_WINDOW_MINIMIZED == event.type) {
+        is_pause = true;
+      } else if (SDL_EVENT_WINDOW_RESTORED == event.type) {
+        is_pause = false;
       } else if (SDL_EVENT_WINDOW_RESIZED == event.type) {
-        framebuffer_resized = true;
+        should_recreate = true;
       }
     }
 
-    if (framebuffer_resized) {
-      framebuffer_resized = false;
+    if (is_pause && !should_quit) {
+      SDL_WaitEvent(nullptr);
+      continue;
+    }
+
+    if (should_recreate) {
+      should_recreate = false;
 
       // Recreate swapchain and related resources
-      vkDestroyPipeline(device, graphics_pipeline, nullptr);
-      // Not use VK_KHR_dynamic_rendering, need to recreate framebuffer
+      // 13
+      vkFreeCommandBuffers(device, command_pool,
+                           static_cast<std::uint32_t>(command_buffers.size()),
+                           command_buffers.data());
+      // 10. Not use VK_KHR_dynamic_rendering, need to recreate framebuffer
       for (auto& fb : swapchain_framebuffers) {
         vkDestroyFramebuffer(device, fb, nullptr);
       }
+      // 9
+      vkDestroyPipeline(device, graphics_pipeline, nullptr);
+      // 6
       for (auto& view : swapchain_image_views) {
         vkDestroyImageView(device, view, nullptr);
       }
+      // 5
       vkDestroySwapchainKHR(device, swapchain, nullptr);
 
       // 5. Recreate swapchain
@@ -1161,9 +1184,6 @@ int main(int /*argc*/, char* /*argv*/[]) {
       }
 
       // 13. Recreate command buffers (one per swapchain image)
-      vkFreeCommandBuffers(device, command_pool,
-                           static_cast<std::uint32_t>(command_buffers.size()),
-                           command_buffers.data());
       command_buffers.resize(image_count);
       alloc_info_cmd.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
       alloc_info_cmd.commandPool = command_pool;
@@ -1231,22 +1251,21 @@ int main(int /*argc*/, char* /*argv*/[]) {
     vkResetFences(device, 1, &in_flight_fence);
 #if _DEBUG
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-                "Waiting for fence and resetting");
+                "The fence is signaled and reset");
 #endif
 
     std::uint32_t image_index;
     if (VkResult acquire_result = vkAcquireNextImageKHR(
             device, swapchain, UINT64_MAX, image_available_semaphore,
             VK_NULL_HANDLE, &image_index);
-        VK_SUCCESS != acquire_result && VK_SUBOPTIMAL_KHR != acquire_result &&
-        VK_ERROR_OUT_OF_DATE_KHR != acquire_result) {
+        VK_SUBOPTIMAL_KHR == acquire_result ||
+        VK_ERROR_OUT_OF_DATE_KHR == acquire_result) {
+      should_recreate = true;
+      continue;
+    } else if (VK_SUCCESS != acquire_result) {
+      should_quit = true;
       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                    "Failed to acquire next image: %d", acquire_result);
-      should_quit = true;
-      continue;
-    } else if (VK_ERROR_OUT_OF_DATE_KHR == acquire_result ||
-               VK_SUBOPTIMAL_KHR == acquire_result) {
-      framebuffer_resized = true;
       continue;
     }
 #if _DEBUG
@@ -1290,16 +1309,16 @@ int main(int /*argc*/, char* /*argv*/[]) {
     present_info.pImageIndices = &image_index;
     if (VkResult present_result =
             vkQueuePresentKHR(present_queue, &present_info);
-        present_result != VK_SUCCESS && present_result != VK_SUBOPTIMAL_KHR &&
-        present_result != VK_ERROR_OUT_OF_DATE_KHR) {
+        present_result == VK_ERROR_OUT_OF_DATE_KHR ||
+        present_result == VK_SUBOPTIMAL_KHR) {
+      should_recreate = true;
+      continue;
+    } else if (present_result != VK_SUCCESS) {
+      should_quit = true;
       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                    "Failed to present image %u: %d", image_index,
                    present_result);
-      should_quit = true;
       continue;
-    } else if (present_result == VK_ERROR_OUT_OF_DATE_KHR ||
-               present_result == VK_SUBOPTIMAL_KHR) {
-      framebuffer_resized = true;
     }
 #if _DEBUG
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Presented image %u",
