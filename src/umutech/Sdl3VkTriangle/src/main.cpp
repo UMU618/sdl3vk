@@ -715,7 +715,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
   VkDeviceMemory vertex_buffer_memory;
   VkBufferCreateInfo buffer_info{};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  buffer_info.size = sizeof(kVertices[0]) * kVertices.size();
+  buffer_info.size = sizeof(kVertices);
   buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   if (VkResult result =
@@ -781,8 +781,8 @@ int main(int /*argc*/, char* /*argv*/[]) {
                  "Failed to map vertex buffer memory: #%d", result);
     return EXIT_FAILURE;
   }
-  std::memcpy(data, kVertices.data(),
-              static_cast<std::size_t>(buffer_info.size));
+  // UMU: the following memcpy is useless
+  std::memcpy(data, kVertices.data(), sizeof(kVertices));
   vkUnmapMemory(device, vertex_buffer_memory);
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
               "Successfully created vertex buffer");

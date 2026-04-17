@@ -147,6 +147,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
+      <Optimization>Full</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -167,6 +168,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
+      <Optimization>Full</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

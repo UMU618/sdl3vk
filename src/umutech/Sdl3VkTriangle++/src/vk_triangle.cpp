@@ -38,15 +38,11 @@ struct Vertex {
   }
 };
 
-// UMU: This is just a placeholder. What really works is the Vertex Shader.
+// UMU: vk::FrontFace::eClockwise
 constexpr std::array<Vertex, 3> kVertices{
-    Vertex{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    Vertex{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    Vertex{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
-
-inline VkDeviceSize Aligned(VkDeviceSize v, VkDeviceSize byte_align) {
-  return (v + byte_align - 1) & ~(byte_align - 1);
-}
+    Vertex{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    Vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    Vertex{{0.0f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
 std::vector<std::byte> ReadFile(const fs::path& filename) {
   std::ifstream file(filename, std::ios::in | std::ios::ate | std::ios::binary);
@@ -719,7 +715,7 @@ bool VkTriangle::CreateRenderPass() noexcept {
 bool VkTriangle::CreateShaderModules() noexcept {
   const auto assets_dir = fs::current_path().parent_path() / "assets";
 
-  auto vert_shader_code = ReadFile(assets_dir / "triangle_vert.spv");
+  auto vert_shader_code = ReadFile(assets_dir / "triangle++_vert.spv");
   if (vert_shader_code.empty()) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                  "Failed to load vertex shader file");
@@ -741,7 +737,7 @@ bool VkTriangle::CreateShaderModules() noexcept {
     return false;
   }
 
-  auto frag_shader_code = ReadFile(assets_dir / "triangle_frag.spv");
+  auto frag_shader_code = ReadFile(assets_dir / "triangle++_frag.spv");
   if (frag_shader_code.empty()) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                  "Failed to load fragment shader file");
@@ -899,12 +895,8 @@ bool VkTriangle::CreateCommandPool() noexcept {
 
 // 12
 bool VkTriangle::CreateVertexBuffer() noexcept {
-  vk::PhysicalDeviceProperties properties;
-  physical_device_.getProperties(&properties);
-  std::uint64_t alignment = properties.limits.minUniformBufferOffsetAlignment;
-
   vk::BufferCreateInfo buffer_info{{},
-                                   Aligned(sizeof(kVertices), alignment),
+                                   sizeof(kVertices),
                                    vk::BufferUsageFlagBits::eVertexBuffer,
                                    vk::SharingMode::eExclusive};
   if (vk::Result result =
@@ -946,6 +938,13 @@ bool VkTriangle::CreateVertexBuffer() noexcept {
     return false;
   }
 
+  if (vk::Result result =
+          device_.bindBufferMemory(vertex_buffer_, vertex_buffer_memory_, 0);
+      vk::Result::eSuccess != result) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "Failed to bind vertex buffer memory: #%d", result);
+    return false;
+  }
   auto data = device_.mapMemory(vertex_buffer_memory_, 0, buffer_info.size, {});
   if (!data.has_value()) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
