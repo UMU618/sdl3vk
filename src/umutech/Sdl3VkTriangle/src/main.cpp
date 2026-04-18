@@ -25,6 +25,9 @@
 
 #include <glm/glm.hpp>
 
+// 0: Load `Vulkan Loader` dynamically Using Volk
+#define LOAD_VULKAN_LOADER_DYNAMICALLY_USING_SDL 1
+
 namespace fs = std::filesystem;
 
 struct Vertex {
@@ -85,6 +88,32 @@ int main(int /*argc*/, char* /*argv*/[]) {
   }
   gsl::final_action sdl_cleanup{[]() { SDL_Quit(); }};
 
+  // Initialize Volk
+#if LOAD_VULKAN_LOADER_DYNAMICALLY_USING_SDL
+  if (!SDL_Vulkan_LoadLibrary(nullptr)) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "Failed to load Vulkan library: %s", SDL_GetError());
+    return EXIT_FAILURE;
+  }
+  gsl::final_action vulkan_cleanup{[]() { SDL_Vulkan_UnloadLibrary(); }};
+
+  vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
+      SDL_Vulkan_GetVkGetInstanceProcAddr());
+  if (!vkGetInstanceProcAddr) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "Failed to get vkGetInstanceProcAddr: %s", SDL_GetError());
+    return EXIT_FAILURE;
+  }
+  volkInitializeCustom(vkGetInstanceProcAddr);
+#else
+  if (VkResult result = volkInitialize(); result != VK_SUCCESS) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize Volk: #%d",
+                 result);
+    return EXIT_FAILURE;
+  }
+#endif
+  // UMU: volkFinalize() does not need to be called on process exit
+
   // Create window
   SDL_Window* window =
       SDL_CreateWindow("SDL3 Vulkan Triangle", 800, 618,
@@ -95,14 +124,6 @@ int main(int /*argc*/, char* /*argv*/[]) {
     return EXIT_FAILURE;
   }
   gsl::final_action window_cleanup{[window]() { SDL_DestroyWindow(window); }};
-
-  // Initialize Volk
-  if (VkResult result = volkInitialize(); result != VK_SUCCESS) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize Volk: #%d",
-                 result);
-    return EXIT_FAILURE;
-  }
-  // UMU: volkFinalize() does not need to be called on process exit
 
   // 1. Create Vulkan instance
   std::uint32_t extension_count{};
