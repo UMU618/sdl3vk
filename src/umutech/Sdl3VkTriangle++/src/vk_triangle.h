@@ -10,8 +10,12 @@
 
 class VkTriangle {
  public:
-  VkTriangle(SDL_Window* window) noexcept;
+  VkTriangle() noexcept = default;
   ~VkTriangle();
+  VkTriangle(const VkTriangle&) noexcept = delete;
+  VkTriangle& operator=(const VkTriangle&) noexcept = delete;
+  VkTriangle(VkTriangle&&) noexcept = delete;
+  VkTriangle& operator=(VkTriangle&&) noexcept = delete;
 
   bool Initialize() noexcept;
   void Free() noexcept;
@@ -37,9 +41,8 @@ class VkTriangle {
   bool CreateSynchronizationObjects() noexcept;  // 15
 
  private:
-  SDL_Window* window_;
+  SDL_Window* window_{};
 
-  PFN_vkGetInstanceProcAddr vk_get_instance_proc_addr_{};
   vk::Instance instance_;
   vk::SurfaceKHR surface_;
   vk::PhysicalDevice physical_device_;

@@ -97,14 +97,14 @@ int main(int /*argc*/, char* /*argv*/[]) {
   }
   gsl::final_action vulkan_cleanup{[]() { SDL_Vulkan_UnloadLibrary(); }};
 
-  vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
+  auto vk_get_instance_proc_addr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
       SDL_Vulkan_GetVkGetInstanceProcAddr());
-  if (!vkGetInstanceProcAddr) {
+  if (!vk_get_instance_proc_addr) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                  "Failed to get vkGetInstanceProcAddr: %s", SDL_GetError());
     return EXIT_FAILURE;
   }
-  volkInitializeCustom(vkGetInstanceProcAddr);
+  volkInitializeCustom(vk_get_instance_proc_addr);
 #else
   if (VkResult result = volkInitialize(); result != VK_SUCCESS) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize Volk: #%d",

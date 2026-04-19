@@ -13,8 +13,6 @@
 
 #include <glm/glm.hpp>
 
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
-
 namespace fs = std::filesystem;
 
 namespace {
@@ -62,27 +60,18 @@ std::vector<std::byte> ReadFile(const fs::path& filename) {
 
 }  // namespace
 
-VkTriangle::VkTriangle(SDL_Window* window) noexcept : window_{window} {
-  assert(window_);
-}
-
 VkTriangle::~VkTriangle() {
   Free();
 }
 
 bool VkTriangle::Initialize() noexcept {
-  // 0. Load Vulkan Loader dynamically
-  vk::detail::DynamicLoader dl;
-  if (!dl.success()) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load Vulkan Loader");
+  window_ = SDL_CreateWindow("Sdl3VkTriangle++", 800, 618,
+                             SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+  if (!window_) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Window creation failed: %s",
+                 SDL_GetError());
     return false;
   }
-  vk_get_instance_proc_addr_ =
-      dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
-  if (!vk_get_instance_proc_addr_) {
-    return false;
-  }
-  VULKAN_HPP_DEFAULT_DISPATCHER.init(vk_get_instance_proc_addr_);
 
   // 1. Create Vulkan instance
   if (!CreateInstance()) {
@@ -192,7 +181,7 @@ bool VkTriangle::Initialize() noexcept {
 }
 
 void VkTriangle::Free() noexcept {
-  if (!vk_get_instance_proc_addr_) {
+  if (!window_) {
     return;
   }
 
@@ -288,10 +277,13 @@ void VkTriangle::Free() noexcept {
   }
   // 1
   instance_.destroy();
+
+  SDL_DestroyWindow(window_);
+  window_ = nullptr;
 }
 
 bool VkTriangle::Draw() noexcept {
-  assert(vk_get_instance_proc_addr_);
+  assert(window_);
   assert(device_);
   assert(in_flight_fence_);
   assert(image_available_semaphore_);
@@ -487,7 +479,7 @@ bool VkTriangle::CreateInstance() noexcept {
     return false;
   }
   instance_ = instance.value;
-  VULKAN_HPP_DEFAULT_DISPATCHER.init(instance_, vk_get_instance_proc_addr_);
+  VULKAN_HPP_DEFAULT_DISPATCHER.init(instance_);
   return true;
 }
 
