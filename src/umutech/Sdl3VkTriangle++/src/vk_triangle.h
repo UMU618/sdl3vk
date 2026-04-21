@@ -8,6 +8,8 @@
 #define VULKAN_HPP_NO_EXCEPTIONS
 #include <vulkan/vulkan.hpp>
 
+namespace umutech::sdl3vk {
+
 class VkTriangle {
  public:
   VkTriangle() noexcept = default;
@@ -72,3 +74,5 @@ class VkTriangle {
   bool is_paused_{};
   bool should_recreate_{};
 };
+
+}  // namespace umutech::sdl3vk

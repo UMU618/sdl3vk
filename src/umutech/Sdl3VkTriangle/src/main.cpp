@@ -3,14 +3,11 @@
 #define _HAS_EXCEPTIONS 0
 #include <array>
 #include <cstring>
-#include <filesystem>
-#include <fstream>
-#include <vector>
-
-#include <gsl/util>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
+
+#include "common/sdl3vk_utils.h"
 
 #if defined(_WIN32)
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -29,6 +26,8 @@
 #define LOAD_VULKAN_LOADER_DYNAMICALLY_USING_SDL 1
 
 namespace fs = std::filesystem;
+
+using namespace umutech::sdl3vk;
 
 struct Vertex {
   glm::vec2 pos;
@@ -62,22 +61,6 @@ constexpr std::array<Vertex, 3> kVertices{
     Vertex{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
     Vertex{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
     Vertex{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
-
-std::vector<std::byte> ReadFile(const fs::path& filename) {
-  std::ifstream file(filename, std::ios::in | std::ios::ate | std::ios::binary);
-  if (!file.is_open()) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to open file: %.*s",
-                 gsl::narrow_cast<int>(filename.string().size()),
-                 filename.string().c_str());
-    return {};
-  }
-  std::size_t file_size = file.tellg();
-  std::vector<std::byte> buffer(file_size);
-  file.seekg(0);
-  file.read(reinterpret_cast<char*>(buffer.data()), file_size);
-  file.close();
-  return buffer;
-}
 
 int main(int /*argc*/, char* /*argv*/[]) {
   // Initialize SDL
@@ -485,7 +468,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Successfully created render pass");
 
   // 8. Load and create shader modules
-  const auto assets_dir = fs::current_path().parent_path() / "assets";
+  const auto assets_dir = GetProductDirectory() / "assets";
   VkShaderModule vert_shader_module{};
   {
     auto vert_shader_code = ReadFile(assets_dir / "triangle_vert.spv");

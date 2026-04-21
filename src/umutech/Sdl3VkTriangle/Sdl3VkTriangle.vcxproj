@@ -21,6 +21,9 @@
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\common\sdl3vk_utils.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -92,6 +95,18 @@
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <VcpkgInstalledDir>..\..\vcpkg_installed</VcpkgInstalledDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <VcpkgInstalledDir>..\..\vcpkg_installed</VcpkgInstalledDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgInstalledDir>..\..\vcpkg_installed</VcpkgInstalledDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgInstalledDir>..\..\vcpkg_installed</VcpkgInstalledDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
@@ -102,6 +117,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <TreatWarningAsError>true</TreatWarningAsError>
       <UseFullPaths>false</UseFullPaths>
+      <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -118,6 +134,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <TreatWarningAsError>true</TreatWarningAsError>
       <UseFullPaths>false</UseFullPaths>
+      <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -137,6 +154,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <UseFullPaths>false</UseFullPaths>
       <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -156,6 +174,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <UseFullPaths>false</UseFullPaths>
       <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

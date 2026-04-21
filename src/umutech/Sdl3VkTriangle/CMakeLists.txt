@@ -6,4 +6,5 @@ find_package(SDL3 CONFIG REQUIRED)
 find_package(VulkanHeaders CONFIG)
 find_package(volk CONFIG)
 
+target_include_directories(Sdl3VkTriangle PRIVATE ..)
 target_link_libraries(Sdl3VkTriangle PRIVATE Microsoft.GSL::GSL SDL3::SDL3 Vulkan::Headers volk::volk volk::volk_headers)

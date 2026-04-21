@@ -5,12 +5,15 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_vulkan.h>
 
+#include "common/sdl3vk_utils.h"
 #include "vk_triangle.h"
 
 // 0: Load `Vulkan Loader` dynamically Using Vulkan-Hpp
 #define LOAD_VULKAN_LOADER_DYNAMICALLY_USING_SDL 1
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
+using namespace umutech::sdl3vk;
 
 SDL_AppResult SDL_AppInit(void** appstate, int /*argc*/, char* /*argv*/[]) {
   SDL_SetAppMetadata("VkTriangle++", "1.0", "com.umutech.sdl3vk");

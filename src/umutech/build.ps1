@@ -9,6 +9,10 @@ if (-not (Test-Path (Join-Path $env:VCPKG_ROOT "vcpkg.exe"))) {
 }
 
 Push-Location $PSScriptRoot
+
+Sdl3VkTriangle\compile_shaders.ps1
+Sdl3VkTriangle++\compile_shaders.ps1
+
 cmake -S . -B tmp --preset vcpkg
 if (-not $?) {
     exit $LASTEXITCODE

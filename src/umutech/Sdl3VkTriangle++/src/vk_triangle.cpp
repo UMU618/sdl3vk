@@ -3,15 +3,12 @@
 #include <array>
 #include <cassert>
 #include <cstring>
-#include <filesystem>
-#include <fstream>
-#include <vector>
 
 #include <SDL3/SDL_vulkan.h>
 
-#include <gsl/util>
-
 #include <glm/glm.hpp>
+
+#include "common/sdl3vk_utils.h"
 
 namespace fs = std::filesystem;
 
@@ -42,23 +39,9 @@ constexpr std::array<Vertex, 3> kVertices{
     Vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
     Vertex{{0.0f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
-std::vector<std::byte> ReadFile(const fs::path& filename) {
-  std::ifstream file(filename, std::ios::in | std::ios::ate | std::ios::binary);
-  if (!file.is_open()) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to open file: %.*s",
-                 gsl::narrow_cast<int>(filename.string().size()),
-                 filename.string().c_str());
-    return {};
-  }
-  std::size_t file_size = file.tellg();
-  std::vector<std::byte> buffer(file_size);
-  file.seekg(0);
-  file.read(reinterpret_cast<char*>(buffer.data()), file_size);
-  file.close();
-  return buffer;
-}
-
 }  // namespace
+
+namespace umutech::sdl3vk {
 
 VkTriangle::~VkTriangle() {
   Free();
@@ -705,7 +688,7 @@ bool VkTriangle::CreateRenderPass() noexcept {
 
 // 8
 bool VkTriangle::CreateShaderModules() noexcept {
-  const auto assets_dir = fs::current_path().parent_path() / "assets";
+  const auto assets_dir = GetProductDirectory() / "assets";
 
   auto vert_shader_code = ReadFile(assets_dir / "triangle++_vert.spv");
   if (vert_shader_code.empty()) {
@@ -1032,3 +1015,5 @@ bool VkTriangle::CreateSynchronizationObjects() noexcept {
 
   return true;
 }
+
+}  // namespace umutech::sdl3vk

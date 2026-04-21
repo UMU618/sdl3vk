@@ -12,44 +12,19 @@ I only tested on Debian Forky and Windows 11.
 
 ### Debian
 
-1. Compile Shaders
-
 ```sh
-cd src/umutech/Sdl3VkTriangle
-bash ./compile_shaders.sh
-```
+cd src/umutech
+bash ./build.shaders.sh
 
-2. Compile Project
-
-```sh
-cd src/umutech/Sdl3VkTriangle
-bash ./build.sh
-
-../bin/Release/Sdl3VkTriangle
+bin/Release/Sdl3VkTriangle
 ```
 
 ### Windows
 
-1. Compile Shaders
-
 ```pwsh
-cd src\umutech\Sdl3VkTriangle
-./compile_shaders.ps1
+cd src\umutech
+./build.ps1
+
+bin\Release\Sdl3VkTriangle.exe
 ```
-
-2. Compile Project
-
-- Use MSVC
-
-  Open the solution file, and click the `Start Without Debugging`/`Local Windows Debugger` button.
-
-- Use CMake + MSBuild
-
-```pwsh
-cd src\umutech\Sdl3VkTriangle
-..\build.ps1
-
-..\bin\Release\Sdl3VkTriangle.exe
-```
-
-### 
+If you use MSVC, just open the solution file, and click the `Start Without Debugging`/`Local Windows Debugger` button.

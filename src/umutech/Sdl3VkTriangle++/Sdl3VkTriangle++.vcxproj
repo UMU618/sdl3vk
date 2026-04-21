@@ -97,6 +97,18 @@
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <VcpkgInstalledDir>..\..\vcpkg_installed</VcpkgInstalledDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <VcpkgInstalledDir>..\..\vcpkg_installed</VcpkgInstalledDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgInstalledDir>..\..\vcpkg_installed</VcpkgInstalledDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgInstalledDir>..\..\vcpkg_installed</VcpkgInstalledDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
@@ -109,6 +121,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
+      <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,6 +140,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
+      <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -148,6 +162,7 @@
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
       <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -169,6 +184,7 @@
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
       <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

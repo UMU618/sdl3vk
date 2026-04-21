@@ -11,6 +11,10 @@ if [ ! -f "${VCPKG_ROOT}/vcpkg" ]; then
 fi
 
 pushd "$(dirname "$0")"
+
+bash Sdl3VkTriangle/compile_shaders.sh
+bash Sdl3VkTriangle++/compile_shaders.sh
+
 cmake -S . -B tmp --preset vcpkg -DCMAKE_BUILD_TYPE=Release -G Ninja
 if [ $? -eq 0 ]; then
     cmake --build tmp

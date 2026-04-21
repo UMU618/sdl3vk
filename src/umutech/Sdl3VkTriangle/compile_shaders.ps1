@@ -8,5 +8,7 @@ if (-not (Test-Path $GLSLC_BIN)) {
     exit 1
 }
 
+Push-Location $PSScriptRoot
 & $GLSLC_BIN shaders\triangle.vert -o ..\assets\triangle_vert.spv
 & $GLSLC_BIN shaders\triangle.frag -o ..\assets\triangle_frag.spv
+Pop-Location
