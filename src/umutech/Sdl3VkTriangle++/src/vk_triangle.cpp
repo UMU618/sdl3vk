@@ -7,6 +7,7 @@
 #include <SDL3/SDL_vulkan.h>
 
 #include <glm/glm.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/sdl3vk_utils.h"
 
@@ -579,6 +580,14 @@ bool VkTriangle::CreateSwapchain() noexcept {
                  "Failed to get physical device surface formats: #%d",
                  formats.result);
     return false;
+  }
+
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+              "Got %zu physical device surface formats:", formats.value.size());
+  for (const auto& format : formats.value) {
+    const auto name = magic_enum::enum_name(format.format);
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "  %.*s (%u)",
+                gsl::narrow_cast<int>(name.size()), name.data(), format.format);
   }
 
   surface_format_ = formats.value[0];

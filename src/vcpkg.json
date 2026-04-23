@@ -1,6 +1,7 @@
 {
   "dependencies": [
     "glm",
+    "magic-enum",
     "ms-gsl",
     {
       "name": "sdl3",

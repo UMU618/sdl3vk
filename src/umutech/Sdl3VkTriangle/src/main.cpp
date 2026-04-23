@@ -21,6 +21,7 @@
 #include <volk.h>
 
 #include <glm/glm.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 // 0: Load `Vulkan Loader` dynamically Using Volk
 #define LOAD_VULKAN_LOADER_DYNAMICALLY_USING_SDL 1
@@ -322,6 +323,15 @@ int main(int /*argc*/, char* /*argv*/[]) {
                    "Failed to get %u physical device surface formats: #%d",
                    format_count, result);
       return EXIT_FAILURE;
+    }
+
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                "Got %u physical device surface formats:", format_count);
+    for (const auto& format : formats) {
+      const auto name = magic_enum::enum_name(format.format);
+      SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "  %.*s (%u)",
+                  gsl::narrow_cast<int>(name.size()), name.data(),
+                  format.format);
     }
 
     surface_format = formats[0];
