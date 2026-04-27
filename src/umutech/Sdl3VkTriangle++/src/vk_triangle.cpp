@@ -599,6 +599,13 @@ bool VkTriangle::CreateSwapchain() noexcept {
       break;
     }
   }
+  {
+    const auto name = magic_enum::enum_name(surface_format_.format);
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                "Selected physical device surface format: %.*s (%u)",
+                gsl::narrow_cast<int>(name.size()), name.data(),
+                surface_format_.format);
+  }
 
   swapchain_extent_ = capabilities.currentExtent;
   if (UINT32_MAX == swapchain_extent_.width) {
