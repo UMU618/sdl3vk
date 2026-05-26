@@ -563,6 +563,32 @@ bool VkTriangle::CreateLogicalDevice() noexcept {
   return true;
 }
 
+vk::PresentModeKHR ChooseSwapPresentMode(
+    const std::vector<vk::PresentModeKHR> available_present_modes) {
+  auto best_mode = vk::PresentModeKHR::eFifo;
+
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Available present mode(s):");
+  for (const auto& available_present_mode : available_present_modes) {
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "  %.*s (%u)",
+                gsl::narrow_cast<int>(
+                    magic_enum::enum_name(available_present_mode).size()),
+                magic_enum::enum_name(available_present_mode).data(),
+                available_present_mode);
+    switch (available_present_mode) {
+      case vk::PresentModeKHR::eImmediate:
+        best_mode = available_present_mode;
+        break;
+      case vk::PresentModeKHR::eMailbox:
+        // first choice
+        return available_present_mode;
+      default:
+        break;
+    }
+  }
+
+  return best_mode;
+}
+
 // 5
 bool VkTriangle::CreateSwapchain() noexcept {
   vk::SurfaceCapabilitiesKHR capabilities;
@@ -615,6 +641,21 @@ bool VkTriangle::CreateSwapchain() noexcept {
     swapchain_extent_.height = static_cast<uint32_t>(height);
   }
 
+  vk::PresentModeKHR present_mode{vk::PresentModeKHR::eFifo};
+  if (vk::ResultValue<std::vector<vk::PresentModeKHR>> result =
+          physical_device_.getSurfacePresentModesKHR(surface_);
+      !result.has_value()) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                 "Failed to get present modes: %d", result.result);
+    return false;
+  } else {
+    present_mode = ChooseSwapPresentMode(result.value);
+    SDL_LogInfo(
+        SDL_LOG_CATEGORY_APPLICATION, "Selected present mode: %.*s (%u)",
+        gsl::narrow_cast<int>(magic_enum::enum_name(present_mode).size()),
+        magic_enum::enum_name(present_mode).data(), present_mode);
+  }
+
   vk::SwapchainCreateInfoKHR swapchain_info{
       {},
       surface_,
@@ -629,7 +670,7 @@ bool VkTriangle::CreateSwapchain() noexcept {
       nullptr,
       capabilities.currentTransform,
       vk::CompositeAlphaFlagBitsKHR::eOpaque,
-      vk::PresentModeKHR::eFifo,
+      present_mode,
       VK_TRUE};
   if (vk::Result result =
           device_.createSwapchainKHR(&swapchain_info, nullptr, &swapchain_);
