@@ -3,6 +3,7 @@
     <Platform Name="ARM64" />
     <Platform Name="x64" />
   </Configurations>
-  <Project Path="Sdl3VkTriangle/Sdl3VkTriangle.vcxproj" Id="e4e8e539-843b-4fc2-b425-ced74c5fb4ed" />
   <Project Path="Sdl3VkTriangle++/Sdl3VkTriangle++.vcxproj" Id="01937c0b-5460-4527-83a8-32a6b5d47af3" />
+  <Project Path="Sdl3VkTriangle/Sdl3VkTriangle.vcxproj" Id="e4e8e539-843b-4fc2-b425-ced74c5fb4ed" />
+  <Project Path="VkVideoDecodeInfo/VkVideoDecodeInfo.vcxproj" Id="bfecd1d8-603c-4c3e-93e9-dc4b0a185a8b" />
 </Solution>
