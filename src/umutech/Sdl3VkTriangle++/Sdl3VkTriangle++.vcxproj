@@ -126,7 +126,6 @@
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
       <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Wv:18 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -146,7 +145,6 @@
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
       <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Wv:18 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -169,7 +167,6 @@
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
       <Optimization>Full</Optimization>
       <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Wv:18 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -192,7 +189,6 @@
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
       <Optimization>Full</Optimization>
       <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Wv:18 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -122,7 +122,6 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <UseFullPaths>false</UseFullPaths>
       <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Wv:18 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,7 +139,6 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <UseFullPaths>false</UseFullPaths>
       <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Wv:18 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -161,7 +159,6 @@
       <UseFullPaths>false</UseFullPaths>
       <Optimization>Full</Optimization>
       <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Wv:18 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -182,7 +179,6 @@
       <UseFullPaths>false</UseFullPaths>
       <Optimization>Full</Optimization>
       <AdditionalIncludeDirectories>..\;</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Wv:18 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
