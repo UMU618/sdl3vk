@@ -6,3 +6,4 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin/Release)
 
 add_subdirectory(Sdl3VkTriangle)
 add_subdirectory(Sdl3VkTriangle++)
+add_subdirectory(VkVideoDecodeInfo)
