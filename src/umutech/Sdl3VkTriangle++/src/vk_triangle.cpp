@@ -599,6 +599,14 @@ bool VkTriangle::CreateSwapchain() noexcept {
                  "Failed to get surface capabilities: %d", result);
     return false;
   }
+  SDL_LogInfo(
+      SDL_LOG_CATEGORY_APPLICATION,
+      "minImageCount: %u, maxImageCount: %u, currentExtent: (%u, %u), "
+      "minImageExtent: (%u, %u), maxImageExtent: (%u, %u)",
+      capabilities.minImageCount, capabilities.maxImageCount,
+      capabilities.currentExtent.width, capabilities.currentExtent.height,
+      capabilities.minImageExtent.width, capabilities.minImageExtent.height,
+      capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
 
   auto formats = physical_device_.getSurfaceFormatsKHR(surface_);
   if (!formats.has_value()) {
@@ -657,21 +665,22 @@ bool VkTriangle::CreateSwapchain() noexcept {
   }
 
   vk::SwapchainCreateInfoKHR swapchain_info{
-      {},
+      {},  // flags_
       surface_,
-      2,
+      capabilities.minImageCount,
       surface_format_.format,
       surface_format_.colorSpace,
       swapchain_extent_,
-      1,
+      1,  // imageArrayLayers_
       vk::ImageUsageFlagBits::eColorAttachment,
       vk::SharingMode::eExclusive,
-      0,
-      nullptr,
+      0,        // queueFamilyIndexCount_
+      nullptr,  // pQueueFamilyIndices_
       capabilities.currentTransform,
       vk::CompositeAlphaFlagBitsKHR::eOpaque,
       present_mode,
-      VK_TRUE};
+      VK_TRUE,  // clipped_
+  };
   if (vk::Result result =
           device_.createSwapchainKHR(&swapchain_info, nullptr, &swapchain_);
       vk::Result::eSuccess != result) {

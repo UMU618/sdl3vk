@@ -5,7 +5,6 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_vulkan.h>
 
-#include "common/sdl3vk_utils.h"
 #include "vk_triangle.h"
 
 // 0: Load `Vulkan Loader` dynamically Using Vulkan-Hpp

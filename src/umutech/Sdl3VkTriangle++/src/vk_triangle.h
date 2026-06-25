@@ -67,6 +67,9 @@ class VkTriangle {
   vk::DeviceMemory vertex_buffer_memory_;
   std::vector<vk::CommandBuffer> command_buffers_;
 
+  // Trae and CodeBuddy may change this to a vector:
+  // `std::vector<vk::Fence> in_flight_fences_;`,
+  // which is unecessary for drawing a static image!
   vk::Fence in_flight_fence_;
   vk::Semaphore image_available_semaphore_;
   vk::Semaphore render_finished_semaphore_;
