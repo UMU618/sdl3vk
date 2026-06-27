@@ -54,7 +54,7 @@ void VkVideoDecodeInfo::PrintVideoDecodeCapabilities() noexcept {
         SDL_LOG_CATEGORY_APPLICATION,
         "\n===========================================================");
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Physical Device: %s\n",
-                props.deviceName);
+                props.deviceName.empty() ? "Unknown" : props.deviceName.data());
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
                 "===========================================================");
 
