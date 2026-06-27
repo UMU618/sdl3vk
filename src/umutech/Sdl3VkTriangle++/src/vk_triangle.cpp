@@ -574,6 +574,9 @@ vk::PresentModeKHR ChooseSwapPresentMode(
                     magic_enum::enum_name(available_present_mode).size()),
                 magic_enum::enum_name(available_present_mode).data(),
                 available_present_mode);
+  }
+
+  for (const auto& available_present_mode : available_present_modes) {
     switch (available_present_mode) {
       case vk::PresentModeKHR::eImmediate:
         best_mode = available_present_mode;
